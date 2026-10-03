@@ -23,15 +23,15 @@ usage() {
 }
 
 get_cpu_utilization() {
-    # Read the initial CPU snapshot
-    read -r user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
+    # Read the initial CPU snapshot (skip the 'cpu' label)
+    read -r cpu user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
     prev_total=$((user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice))
     prev_idle=$((idle + iowait))
 
     sleep 1
 
-    # Read the second CPU snapshot
-    read -r user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
+    # Read the second CPU snapshot (skip the 'cpu' label)
+    read -r cpu user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
     total=$((user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice))
     idle_total=$((idle + iowait))
 
@@ -51,7 +51,10 @@ get_memory_utilization() {
     mem_total=$(free -m | awk '/^Mem:/ {print $2}')
     mem_used=$(free -m | awk '/^Mem:/ {print $3}')
 
-    if [ "${mem_total:-0}" -eq 0 ]; then
+    mem_total=${mem_total:-0}
+    mem_used=${mem_used:-0}
+
+    if [ "$mem_total" -eq 0 ]; then
         echo 0
         return
     fi
@@ -61,7 +64,8 @@ get_memory_utilization() {
 
 get_disk_utilization() {
     disk_usage=$(df -P / | awk 'NR==2 {print $5}' | tr -d '%')
-    echo "${disk_usage:-0}"
+    disk_usage=${disk_usage:-0}
+    echo "$disk_usage"
 }
 
 explain_status() {
@@ -115,6 +119,10 @@ fi
 cpu_usage=$(get_cpu_utilization)
 memory_usage=$(get_memory_utilization)
 disk_usage=$(get_disk_utilization)
+
+cpu_usage=${cpu_usage:-0}
+memory_usage=${memory_usage:-0}
+disk_usage=${disk_usage:-0}
 
 status="Healthy"
 
